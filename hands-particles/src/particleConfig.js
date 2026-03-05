@@ -3,12 +3,8 @@ export const particleConfig = {
   particleCount: 6000,
 
   // Movement
-  speed: 3.0,
-  maxSpeed: 8.0,
-
-  // Physics
-  friction: 0.98,
-  springStrength: 0.01,
+  speed: 6.0,
+  maxSpeed: 12.0,
 
   // Hand interaction
   repulsionRadius: 200,
@@ -24,20 +20,12 @@ export const particleConfig = {
   impulseDecayRate: 0.93, // How quickly impulse effect fades
 
   // Fluid flow (Perlin noise)
-  noiseScale: 0.002,
-  noiseStrength: 0.3,
-  noiseSpeed: 0.001,
-
-  // Flocking behavior
-  perceptionRadius: 100,
-  separationRadius: 80,
-  cohesionStrength: 0.0,
-  alignmentStrength: 0.0,
-  separationStrength: 0.2,
-  maxForce: 0.5,
+  noiseScale: 0.001,
+  noiseStrength: 0.15,
+  noiseSpeed: 0.0002,
 
   // Visual
-  particleSize: 10,
+  particleSize: 3,
   trail: 1, // 0 = full trail, 1 = no trail (lower = less fading)
   colorMode: "velocity", // 'velocity', 'noise', 'distance', 'static'
 

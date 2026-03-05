@@ -1,5 +1,7 @@
-import toxi from "toxiclibsjs";
 import { particleConfig } from "./particleConfig.js";
+import { FlowField } from "./FlowField.js";
+import { Particle } from "./Particle.js";
+import { FlockingBehavior } from "./FlockingBehavior.js";
 
 export class ParticleSystem {
   constructor(canvasElement, config = particleConfig) {
@@ -8,78 +10,14 @@ export class ParticleSystem {
     this.config = { ...config };
 
     this.particles = [];
-
-    try {
-      this.physics = new toxi.physics2d.VerletPhysics2D();
-      this.physics.setDrag(1 - this.config.friction);
-    } catch (error) {
-      this.physics = null;
-    }
-
     this.hands = [];
     this.handVelocities = [];
-    this.noiseOffset = 0;
 
-    // Create flow field grid
-    this.flowFieldResolution = 30; // Grid cell size in pixels (larger = fewer cells)
-    this.flowField = [];
-    this.flowFieldUpdateCounter = 0;
-    this.flowFieldUpdateInterval = 4; // Update every N frames
-    this.initFlowField();
+    // Initialize subsystems
+    this.flowField = new FlowField(this.canvas, this.config);
+    this.flocking = new FlockingBehavior();
 
     this.initParticles();
-  }
-
-  initFlowField() {
-    const cols = Math.ceil(this.canvas.width / this.flowFieldResolution);
-    const rows = Math.ceil(this.canvas.height / this.flowFieldResolution);
-
-    this.flowField = [];
-    for (let y = 0; y < rows; y++) {
-      this.flowField[y] = [];
-      for (let x = 0; x < cols; x++) {
-        this.flowField[y][x] = { angle: 0, magnitude: 0 };
-      }
-    }
-  }
-
-  updateFlowField() {
-    const cols = this.flowField[0].length;
-    const rows = this.flowField.length;
-
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const noiseVal = this.noise(
-          x * this.config.noiseScale + this.noiseOffset,
-          y * this.config.noiseScale,
-          0,
-        );
-
-        // Convert noise to angle (0 to 2π)
-        const angle = noiseVal * Math.PI * 2;
-        const magnitude = this.config.noiseStrength;
-
-        this.flowField[y][x] = { angle, magnitude };
-      }
-    }
-
-    this.noiseOffset += this.config.noiseSpeed;
-  }
-
-  getFlowAtPosition(x, y) {
-    const col = Math.floor(x / this.flowFieldResolution);
-    const row = Math.floor(y / this.flowFieldResolution);
-
-    if (
-      row >= 0 &&
-      row < this.flowField.length &&
-      col >= 0 &&
-      col < this.flowField[0].length
-    ) {
-      return this.flowField[row][col];
-    }
-
-    return { angle: 0, magnitude: 0 };
   }
 
   initParticles() {
@@ -87,16 +25,12 @@ export class ParticleSystem {
       const angle = Math.random() * Math.PI * 2;
       const speed = this.config.speed;
 
-      const particle = {
-        x: Math.random() * this.canvas.width,
-        y: Math.random() * this.canvas.height,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        hue: 0,
-        impulse: 0, // Tracks if particle is being thrown
-        impulseVx: 0,
-        impulseVy: 0,
-      };
+      const particle = new Particle(
+        Math.random() * this.canvas.width,
+        Math.random() * this.canvas.height,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed,
+      );
 
       this.particles.push(particle);
     }
@@ -108,12 +42,8 @@ export class ParticleSystem {
   }
 
   update() {
-    // Update the global flow field every N frames for better performance
-    this.flowFieldUpdateCounter++;
-    if (this.flowFieldUpdateCounter >= this.flowFieldUpdateInterval) {
-      this.updateFlowField();
-      this.flowFieldUpdateCounter = 0;
-    }
+    // Update the global flow field
+    this.flowField.update();
 
     this.particles.forEach((particle) => {
       // Check if particle has impulse (is being thrown)
@@ -137,23 +67,23 @@ export class ParticleSystem {
         }
       } else {
         // Sample from global flow field
-        const flow = this.getFlowAtPosition(particle.x, particle.y);
+        const flow = this.flowField.getFlowAt(particle.x, particle.y);
 
         // Apply flow force
-        particle.vx += Math.cos(flow.angle) * flow.magnitude;
-        particle.vy += Math.sin(flow.angle) * flow.magnitude;
+        particle.applyForce(
+          Math.cos(flow.angle) * flow.magnitude,
+          Math.sin(flow.angle) * flow.magnitude,
+        );
 
-        // Very gentle separation to prevent clustering (only 20% of particles for performance)
-        if (Math.random() < 0.2) {
-          const separationForce = this.separate(particle);
-          particle.vx += separationForce.x * 0.05;
-          particle.vy += separationForce.y * 0.05;
-        }
+        // Apply steering behaviors for flocking
+        const steering = this.flocking.calculateSteering(
+          particle,
+          this.particles,
+        );
+        particle.applyForce(steering.x, steering.y);
 
-        // Apply friction (reduced for more responsive movement)
-        const effectiveFriction = 0.98;
-        particle.vx *= effectiveFriction;
-        particle.vy *= effectiveFriction;
+        // Apply friction for smooth motion (less friction for faster flying)
+        particle.applyFriction(0.99);
       }
 
       // Hand interaction (can trigger impulse)
@@ -161,157 +91,19 @@ export class ParticleSystem {
         this.applyHandForces(particle);
       }
 
-      // Apply speed limits
-      const speed = Math.sqrt(
-        particle.vx * particle.vx + particle.vy * particle.vy,
-      );
-      if (speed > this.config.maxSpeed * 2) {
-        // Allow higher speed when thrown
-        const scale = (this.config.maxSpeed * 2) / speed;
-        particle.vx *= scale;
-        particle.vy *= scale;
-      }
-
-      // Maintain minimum speed for flocking
-      // Apply even during impulse decay to prevent particles from stopping
-      if (speed < this.config.speed && speed > 0.1) {
-        const scale = this.config.speed / speed;
-        particle.vx *= scale;
-        particle.vy *= scale;
-      } else if (speed <= 0.1) {
-        // If particle is nearly stopped, give it a random direction
-        const angle = Math.random() * Math.PI * 2;
-        particle.vx = Math.cos(angle) * this.config.speed;
-        particle.vy = Math.sin(angle) * this.config.speed;
-      }
+      // Apply speed limits (allow higher speed when thrown)
+      particle.limitSpeed(this.config.maxSpeed * 2);
 
       // Update position
-      particle.x += particle.vx;
-      particle.y += particle.vy;
+      particle.updatePosition();
 
       // Handle boundaries
-      this.handleBoundaries(particle);
+      particle.handleBoundaries(this.canvas, this.config.boundaryMode);
 
       // Calculate color based on mode
+      const speed = particle.getSpeed();
       particle.hue = this.calculateHue(particle, speed);
     });
-  }
-
-  flock(particle) {
-    const separation = this.separate(particle);
-    const alignment = this.align(particle);
-    const cohesion = this.cohere(particle);
-
-    // Weight the forces
-    separation.x *= this.config.separationStrength;
-    separation.y *= this.config.separationStrength;
-    alignment.x *= this.config.alignmentStrength;
-    alignment.y *= this.config.alignmentStrength;
-    cohesion.x *= this.config.cohesionStrength;
-    cohesion.y *= this.config.cohesionStrength;
-
-    // Combine forces
-    return {
-      x: separation.x + alignment.x + cohesion.x,
-      y: separation.y + alignment.y + cohesion.y,
-    };
-  }
-
-  separate(particle) {
-    const steer = { x: 0, y: 0 };
-    let count = 0;
-    const maxNeighbors = 6; // Limit neighbors checked for performance
-    const radiusSquared =
-      this.config.separationRadius * this.config.separationRadius;
-
-    for (const other of this.particles) {
-      if (count >= maxNeighbors) break; // Early exit for performance
-
-      const dx = particle.x - other.x;
-      const dy = particle.y - other.y;
-      const distSquared = dx * dx + dy * dy;
-
-      if (distSquared > 0 && distSquared < radiusSquared) {
-        const distance = Math.sqrt(distSquared);
-        const diffX = dx / distance;
-        const diffY = dy / distance;
-        steer.x += diffX / distance;
-        steer.y += diffY / distance;
-        count++;
-      }
-    }
-
-    if (count > 0) {
-      steer.x /= count;
-      steer.y /= count;
-    }
-
-    return this.limitForce(steer);
-  }
-
-  align(particle) {
-    const steer = { x: 0, y: 0 };
-    let count = 0;
-
-    for (const other of this.particles) {
-      const dx = particle.x - other.x;
-      const dy = particle.y - other.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance > 0 && distance < this.config.perceptionRadius) {
-        steer.x += other.vx;
-        steer.y += other.vy;
-        count++;
-      }
-    }
-
-    if (count > 0) {
-      steer.x /= count;
-      steer.y /= count;
-
-      // Subtract current velocity to get steering force
-      steer.x -= particle.vx;
-      steer.y -= particle.vy;
-    }
-
-    return this.limitForce(steer);
-  }
-
-  cohere(particle) {
-    const steer = { x: 0, y: 0 };
-    let count = 0;
-
-    for (const other of this.particles) {
-      const dx = particle.x - other.x;
-      const dy = particle.y - other.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance > 0 && distance < this.config.perceptionRadius) {
-        steer.x += other.x;
-        steer.y += other.y;
-        count++;
-      }
-    }
-
-    if (count > 0) {
-      steer.x /= count;
-      steer.y /= count;
-
-      // Steer towards average position
-      steer.x -= particle.x;
-      steer.y -= particle.y;
-    }
-
-    return this.limitForce(steer);
-  }
-
-  limitForce(force) {
-    const magnitude = Math.sqrt(force.x * force.x + force.y * force.y);
-    if (magnitude > this.config.maxForce) {
-      force.x = (force.x / magnitude) * this.config.maxForce;
-      force.y = (force.y / magnitude) * this.config.maxForce;
-    }
-    return force;
   }
 
   applyHandForces(particle) {
@@ -396,39 +188,6 @@ export class ParticleSystem {
     });
   }
 
-  handleBoundaries(particle) {
-    const margin = 10;
-
-    switch (this.config.boundaryMode) {
-      case "wrap":
-        if (particle.x < -margin) particle.x = this.canvas.width + margin;
-        if (particle.x > this.canvas.width + margin) particle.x = -margin;
-        if (particle.y < -margin) particle.y = this.canvas.height + margin;
-        if (particle.y > this.canvas.height + margin) particle.y = -margin;
-        break;
-
-      case "bounce":
-        if (particle.x < 0 || particle.x > this.canvas.width) {
-          particle.x = Math.max(0, Math.min(this.canvas.width, particle.x));
-          particle.vx *= -0.8;
-        }
-        if (particle.y < 0 || particle.y > this.canvas.height) {
-          particle.y = Math.max(0, Math.min(this.canvas.height, particle.y));
-          particle.vy *= -0.8;
-        }
-        break;
-
-      case "clamp":
-        particle.x = Math.max(0, Math.min(this.canvas.width, particle.x));
-        particle.y = Math.max(0, Math.min(this.canvas.height, particle.y));
-        if (particle.x === 0 || particle.x === this.canvas.width)
-          particle.vx = 0;
-        if (particle.y === 0 || particle.y === this.canvas.height)
-          particle.vy = 0;
-        break;
-    }
-  }
-
   calculateHue(particle, speed) {
     const [minHue, maxHue] = this.config.hueRange;
 
@@ -482,21 +241,14 @@ export class ParticleSystem {
     });
   }
 
-  // Simple Perlin-like noise function
-  noise(x, y, z = 0) {
-    // Using a simple pseudo-random noise based on sine
-    const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
-    return n - Math.floor(n);
-  }
-
   updateConfig(newConfig) {
     this.config = { ...this.config, ...newConfig };
-    this.physics.setDrag(1 - this.config.friction);
   }
 
   resize(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
+    this.flowField.resize(width, height);
   }
 
   clear() {
