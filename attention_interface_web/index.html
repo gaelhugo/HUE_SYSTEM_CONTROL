@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Tracker</title>
+  </head>
+  <body>
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <div id="dom_overlay">
+      <div class="top_right">
+        <span class="style-icon">B</span>
+        <input
+          type="text"
+          id="input_top_right"
+          placeholder="Type your bold text"
+        />
+        <!-- <label for="input_top_right">Type your bold text</label> -->
+      </div>
+      <div class="bottom_right">
+        <span class="style-icon">U</span>
+        <input
+          type="text"
+          id="input_bottom_right"
+          placeholder="Type your underlined text"
+        />
+        <!-- <label for="input_bottom_right">Type your underlined text</label> -->
+      </div>
+      <div class="bottom_left">
+        <span class="style-icon">I</span>
+        <input
+          type="text"
+          id="input_bottom_left"
+          placeholder="Type your italic text"
+        />
+        <!-- <label for="input_bottom_left">Type your italic text</label> -->
+      </div>
+      <div class="top_left">
+        <span class="style-icon">A</span>
+        <input
+          type="text"
+          id="input_top_left"
+          placeholder="Type your regular text"
+        />
+        <!-- <label for="input_top_left">Type your regular text</label> -->
+      </div>
+
+      <div id="central_doc">
+        <div class="doc_header">
+          <div class="ruler">
+            <div class="ruler_markers"></div>
+          </div>
+        </div>
+        <div class="doc_content">
+          <div class="doc_page">
+            <p contenteditable="true" class="doc_text"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

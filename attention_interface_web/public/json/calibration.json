@@ -1,0 +1,104 @@
+{
+  "timestamp": "2026-03-01T17:22:52.497Z",
+  "points": [
+    {
+      "name": "top-left",
+      "screenPosition": {
+        "x": 0.05,
+        "y": 0.05
+      },
+      "irisPosition": {
+        "x": 0.022394057363271713,
+        "y": -0.04617725064357122
+      }
+    },
+    {
+      "name": "top-center",
+      "screenPosition": {
+        "x": 0.5,
+        "y": 0.05
+      },
+      "irisPosition": {
+        "x": -0.004406190166870753,
+        "y": -0.0411372184753418
+      }
+    },
+    {
+      "name": "top-right",
+      "screenPosition": {
+        "x": 0.95,
+        "y": 0.05
+      },
+      "irisPosition": {
+        "x": -0.01792758454879125,
+        "y": -0.04340593020121256
+      }
+    },
+    {
+      "name": "middle-left",
+      "screenPosition": {
+        "x": 0.05,
+        "y": 0.5
+      },
+      "irisPosition": {
+        "x": 0.023557619502147038,
+        "y": -0.03765141467253367
+      }
+    },
+    {
+      "name": "center",
+      "screenPosition": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "irisPosition": {
+        "x": -0.00390636424223582,
+        "y": -0.039725316721096374
+      }
+    },
+    {
+      "name": "middle-right",
+      "screenPosition": {
+        "x": 0.95,
+        "y": 0.5
+      },
+      "irisPosition": {
+        "x": -0.013841487191341541,
+        "y": -0.03697155526390782
+      }
+    },
+    {
+      "name": "bottom-left",
+      "screenPosition": {
+        "x": 0.05,
+        "y": 0.95
+      },
+      "irisPosition": {
+        "x": 0.024739064276218414,
+        "y": -0.032625517497460045
+      }
+    },
+    {
+      "name": "bottom-center",
+      "screenPosition": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "irisPosition": {
+        "x": 0.0012510592738787334,
+        "y": -0.031768293430407844
+      }
+    },
+    {
+      "name": "bottom-right",
+      "screenPosition": {
+        "x": 0.95,
+        "y": 0.95
+      },
+      "irisPosition": {
+        "x": -0.01081329087416331,
+        "y": -0.03464788074294726
+      }
+    }
+  ]
+}

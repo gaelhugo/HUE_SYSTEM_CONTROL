@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Philips Hue Control</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container">
+        <h1>💡 Philips Hue Light Control</h1>
+
+        <!-- Connection Section -->
+        <section class="connection-section">
+          <h2>Bridge Connection</h2>
+          <div class="input-group">
+            <label for="bridge-ip">Bridge IP:</label>
+            <input
+              type="text"
+              id="bridge-ip"
+              value="192.168.2.4"
+              placeholder="192.168.2.4"
+            />
+            <button id="connect-btn">Connect</button>
+          </div>
+          <div id="connection-status" class="status"></div>
+        </section>
+
+        <!-- Lights Section -->
+        <section class="lights-section">
+          <h2>Discovered Lights</h2>
+          <div id="lights-list" class="lights-grid"></div>
+        </section>
+
+        <!-- Attention Controller Section -->
+        <section class="attention-section">
+          <h2>Attention Controller</h2>
+          <div class="input-group">
+            <button id="activate-btn">Activate</button>
+            <label class="checkbox-label">
+              <input type="checkbox" id="iris-detection-checkbox" />
+              Iris detection
+            </label>
+          </div>
+          <div id="attention-status" class="status"></div>
+          <canvas id="attention-canvas"></canvas>
+          <div id="face-rotation-log" class="rotation-log"></div>
+        </section>
+
+        <!-- LLM Control Section -->
+        <section class="llm-section">
+          <h2>Natural Language Control</h2>
+          <div class="input-group">
+            <input
+              type="text"
+              id="user-input"
+              placeholder="e.g., Turn on light 1, Set all lights to blue..."
+            />
+            <button id="send-btn">Send</button>
+          </div>
+          <div class="output-area">
+            <h3>Output</h3>
+            <div id="raw-output" class="output-box"></div>
+            <div id="result-output" class="result-box"></div>
+          </div>
+        </section>
+
+        <!-- Log Section -->
+        <section class="log-section">
+          <h2>Activity Log</h2>
+          <div id="log" class="log-box"></div>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
