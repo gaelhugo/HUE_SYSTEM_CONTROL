@@ -230,7 +230,7 @@ class HueControlApp {
             this.log(`Gaze right: ${avgX.toFixed(4)}`);
             // Add light control here if needed
             if (this.hueBridge) {
-              this.hueBridge.turnOnLight(2);
+              this.hueBridge.turnOnLight(5);
             }
           }
         }
